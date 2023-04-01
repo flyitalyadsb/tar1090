@@ -2881,7 +2881,7 @@ PlaneObject.prototype.setProjection = function(arg) {
                 text: new ol.style.Text({
                     font: ((15 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
                     fill: new ol.style.Fill({ color: '#000' }),
-                    offsetY: -8,
+                    offsetY: -40,
                     text: this.radius + " meter",
                 })
             });
@@ -2911,8 +2911,8 @@ PlaneObject.prototype.setProjection = function(arg) {
             text: new ol.style.Text({
                 font: ((15 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
                 fill: new ol.style.Fill({ color: '#000' }),
-                offsetY: -8,
-                text: this.radius + "meter",
+                offsetY: -40,
+                text: this.radius + " meter",
             })
         });
         this.feature_circle.setStyle(circleStyle);
