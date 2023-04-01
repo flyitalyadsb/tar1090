@@ -1672,16 +1672,20 @@ PlaneObject.prototype.clearMarker = function() {
     this.markerDrawn = false;
     if (this.marker && this.marker.visible) {
         PlaneIconFeatures.removeFeature(this.marker);
+        PlaneIconFeatures.removeFeature(this.feature_circle);
         this.marker.visible = false;
     }
     delete this.marker;
     if (this.glMarker && this.glMarker.visible) {
         webglFeatures.removeFeature(this.glMarker);
+        PlaneIconFeatures.removeFeature(this.feature_circle);
         this.glMarker.visible = false;
     }
     delete this.glMarker;
     delete this.styleKey;
     delete this.olPoint;
+    delete this.feature_circle;
+
 };
 
 // Update our marker on the map
@@ -1705,7 +1709,7 @@ PlaneObject.prototype.updateMarker = function(moved) {
     }
     if (icaoType == null && this.squawk == 7777)
         icaoType = 'TWR';
-    let baseMarkerKey = this.category + "_"
+    let baseMarkerKey = this.categoryf + "_"
         + this.typeDescription + "_" + this.wtc  + "_" + icaoType + '_' + (this.altitude == "ground") + eastbound;
 
     if (!this.shape || this.baseMarkerKey != baseMarkerKey) {
@@ -1718,7 +1722,7 @@ PlaneObject.prototype.updateMarker = function(moved) {
             console.log(baseMarkerKey);
         }
         if (!baseMarker) {
-            baseMarker = ['pumpkin', 1];
+            basemarker = ['pumpkin', 1];
         }
         this.shape = shapes[baseMarker[0]];
         this.baseScale = baseMarker[1] * 0.96;
@@ -1733,6 +1737,7 @@ PlaneObject.prototype.updateMarker = function(moved) {
     if (webgl && !enableLabels && this.marker) {
         if (this.marker.visible) {
             PlaneIconFeatures.removeFeature(this.marker);
+            PlaneIconFeatures.removeFeature(this.feature_circle);
             this.marker.visible = false;
         }
     }
@@ -2854,9 +2859,55 @@ PlaneObject.prototype.setProjection = function(arg) {
     this.proj = proj;
 
     if (!this.olPoint) {
-        this.olPoint = new ol.geom.Point(proj);
+        this.olPoint = new ol.geom.Point(this.proj);
+
+        this.circle = TAR.utils.make_geodesic_circle([lon, lat], 10000, 180);
+        this.circle.transform('EPSG:4326', 'EPSG:3857');
+        this.feature_circle = new ol.Feature(this.circle);
+
+        let circleStyle = new ol.style.Style({
+            fill: null,
+            stroke: new ol.style.Stroke({
+                color: '#000',
+                lineDash: SiteCirclesLineDash,
+                width: globalScale,
+            }),
+            text: new ol.style.Text({
+                font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
+                fill: new ol.style.Fill({ color: '#000' }),
+                offsetY: -8,
+                text: format_distance_long(10000, DisplayUnits, 0),
+            })
+        });
+
+        this.feature_circle.setStyle(circleStyle);
+        PlaneIconFeatures.addFeature(this.feature_circle);
+
+
     } else if (moved) {
         this.olPoint.setCoordinates(proj);
+
+        PlaneIconFeatures.removeFeature(this.feature_circle);
+        this.circle = TAR.utils.make_geodesic_circle([lon, lat], 10000, 180);
+        this.circle.transform('EPSG:4326', 'EPSG:3857');
+        this.feature_circle = new ol.Feature(this.circle);
+
+        let circleStyle = new ol.style.Style({
+            fill: null,
+            stroke: new ol.style.Stroke({
+                color: '#000',
+                lineDash: SiteCirclesLineDash,
+                width: globalScale,
+            }),
+            text: new ol.style.Text({
+                font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
+                fill: new ol.style.Fill({ color: '#000' }),
+                offsetY: -8,
+                text: format_distance_long(10000, DisplayUnits, 0),
+            })
+        });
+        this.feature_circle.setStyle(circleStyle);
+        PlaneIconFeatures.addFeature(this.feature_circle);
     }
 }
 
