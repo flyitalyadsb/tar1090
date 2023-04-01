@@ -2879,10 +2879,10 @@ PlaneObject.prototype.setProjection = function(arg) {
                     width: globalScale,
                 }),
                 text: new ol.style.Text({
-                    font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
+                    font: ((50 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
                     fill: new ol.style.Fill({ color: '#000' }),
                     offsetY: -8,
-                    text: format_distance_brief(this.radius, DisplayUnits, 0),
+                    text: this.radius + "meter",
                 })
             });
             this.feature_circle.setStyle(circleStyle);
@@ -2909,10 +2909,10 @@ PlaneObject.prototype.setProjection = function(arg) {
                 width: globalScale,
             }),
             text: new ol.style.Text({
-                font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
+                font: ((50 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
                 fill: new ol.style.Fill({ color: '#000' }),
                 offsetY: -8,
-                text: format_distance_brief(this.radius, DisplayUnits, 0),
+                text: this.radius + "meter",
             })
         });
         this.feature_circle.setStyle(circleStyle);
