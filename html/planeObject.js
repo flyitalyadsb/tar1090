@@ -57,6 +57,7 @@ PlaneObject.prototype.setNull = function() {
     this.squawk    = null;
     this.category  = null;
     this.dataSource = "modeS";
+    this.radius = null;
 
     // Basic location information
     this.altitude       = null;
@@ -2861,34 +2862,42 @@ PlaneObject.prototype.setProjection = function(arg) {
     if (!this.olPoint) {
         this.olPoint = new ol.geom.Point(this.proj);
 
-        this.circle = TAR.utils.make_geodesic_circle([lon, lat], 10000, 180);
-        this.circle.transform('EPSG:4326', 'EPSG:3857');
-        this.feature_circle = new ol.Feature(this.circle);
+        PlaneIconFeatures.removeFeature(this.feature_circle);
+        if (this.rc != null) {
+            this.radius = this.rc
+        }
+        if (this.radius) {
+            this.circle = TAR.utils.make_geodesic_circle([lon, lat], this.radius, 180);
+            this.circle.transform('EPSG:4326', 'EPSG:3857');
+            this.feature_circle = new ol.Feature(this.circle);
 
-        let circleStyle = new ol.style.Style({
-            fill: null,
-            stroke: new ol.style.Stroke({
-                color: '#000',
-                lineDash: SiteCirclesLineDash,
-                width: globalScale,
-            }),
-            text: new ol.style.Text({
-                font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
-                fill: new ol.style.Fill({ color: '#000' }),
-                offsetY: -8,
-                text: format_distance_long(10000, DisplayUnits, 0),
-            })
-        });
-
-        this.feature_circle.setStyle(circleStyle);
-        PlaneIconFeatures.addFeature(this.feature_circle);
-
+            let circleStyle = new ol.style.Style({
+                fill: null,
+                stroke: new ol.style.Stroke({
+                    color: '#000',
+                    lineDash: SiteCirclesLineDash,
+                    width: globalScale,
+                }),
+                text: new ol.style.Text({
+                    font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
+                    fill: new ol.style.Fill({ color: '#000' }),
+                    offsetY: -8,
+                    text: format_distance_long(10000, DisplayUnits, 0),
+                })
+            });
+            this.feature_circle.setStyle(circleStyle);
+            PlaneIconFeatures.addFeature(this.feature_circle);
+        }
 
     } else if (moved) {
         this.olPoint.setCoordinates(proj);
 
         PlaneIconFeatures.removeFeature(this.feature_circle);
-        this.circle = TAR.utils.make_geodesic_circle([lon, lat], 10000, 180);
+        if (this.rc != null) {
+            this.radius = this.rc
+        }
+        if (this.radius) {
+        this.circle = TAR.utils.make_geodesic_circle([lon, lat], this.radius, 180);
         this.circle.transform('EPSG:4326', 'EPSG:3857');
         this.feature_circle = new ol.Feature(this.circle);
 
@@ -2908,6 +2917,7 @@ PlaneObject.prototype.setProjection = function(arg) {
         });
         this.feature_circle.setStyle(circleStyle);
         PlaneIconFeatures.addFeature(this.feature_circle);
+    }
     }
 }
 
