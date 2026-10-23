@@ -1,0 +1,82 @@
+name: docker build
+
+# flyitalyadsb: tar1090's web files as ghcr.io/flyitalyadsb/tar1090, for the nginx
+# pods of mappa.flyitalyadsb.com (flyitalyadsb/Dockerfile). Every build of this
+# branch is a `canary`, which argocd-image-updater in nesso-infra deploys to cell
+# B; promote.yaml moves `stable` (cell A) once B has held it. Design: nesso-infra
+# docs/FLYITALYADSB-TWO-CELLS.md, "Automatic release of readsb and tar1090".
+on:
+  push:
+    branches: [flyitalyadsb]
+    # A change to the workflows alone doesn't change the image.
+    paths-ignore: [".github/**"]
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Build wiedehopf/tar1090 at this commit instead of this branch (to adopt what runs). Doesn't move canary."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source to build
+        id: src
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          if [ -n "$SOURCE_REF" ]; then
+            git clone -q https://github.com/wiedehopf/tar1090.git src
+            git -C src checkout -q "$SOURCE_REF"
+          else
+            git worktree add -q src HEAD
+          fi
+          echo "commit=$(git -C src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Static checks (the mappa vhost's sub_filter strings, local scripts, nginx.conf placeholders)
+        run: python3 flyitalyadsb/check.py src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Browser smoke test
+        working-directory: flyitalyadsb
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          node smoke.mjs ../src
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ steps.src.outputs.commit }}
+            type=raw,value=canary,enable=${{ inputs.source_ref == '' }}
+            type=raw,value=latest,enable=${{ inputs.source_ref == '' }}
+          labels: |
+            org.opencontainers.image.revision=${{ steps.src.outputs.commit }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: flyitalyadsb/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: REVISION=${{ steps.src.outputs.commit }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "flyitalyadsb: browser smoke test of tar1090 before an image is built (smoke.mjs)",
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.48.2"
+  }
+}

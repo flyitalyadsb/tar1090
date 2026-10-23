@@ -1,0 +1,46 @@
+name: sync upstream
+
+# flyitalyadsb: merge wiedehopf/tar1090 master into this branch once a day, and
+# build it when the merge made a commit (that build becomes the canary for cell B).
+# This branch carries only flyitalyadsb/ and .github/ on top of upstream, so the
+# merge is clean unless upstream adds files with those names.
+on:
+  schedule:
+    - cron: "41 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  # A push made with GITHUB_TOKEN starts no workflow: start the build explicitly.
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: flyitalyadsb
+          fetch-depth: 0
+      - name: Merge wiedehopf/tar1090 master
+        id: merge
+        run: |
+          git remote add upstream https://github.com/wiedehopf/tar1090.git
+          git fetch -q upstream master
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          before=$(git rev-parse HEAD)
+          if ! git merge --no-edit upstream/master; then
+            git merge --abort
+            echo "::error::Merge conflict with upstream master, needs a manual merge"
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" != "$before" ]; then
+            git push origin flyitalyadsb
+            echo "merged=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build the merged commit
+        if: steps.merge.outputs.merged == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run docker.yaml --ref flyitalyadsb

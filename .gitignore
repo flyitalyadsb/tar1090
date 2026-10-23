@@ -363,3 +363,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# flyitalyadsb
+__pycache__/
+flyitalyadsb/node_modules/
