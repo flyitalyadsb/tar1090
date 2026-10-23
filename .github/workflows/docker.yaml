@@ -2,8 +2,9 @@ name: docker build
 
 # flyitalyadsb: tar1090's web files as ghcr.io/flyitalyadsb/tar1090, for the nginx
 # pods of mappa.flyitalyadsb.com (flyitalyadsb/Dockerfile). Every build of this
-# branch is a `canary`, which argocd-image-updater in nesso-infra deploys to cell
-# B; promote.yaml moves `stable` (cell A) once B has held it. Design: nesso-infra
+# branch is a canary (ghcr.io/flyitalyadsb/tar1090-canary:canary), which
+# argocd-image-updater in nesso-infra deploys to cell B; promote.yaml moves
+# tar1090:stable (cell A) once B has held it. Design: nesso-infra
 # docs/FLYITALYADSB-TWO-CELLS.md, "Automatic release of readsb and tar1090".
 on:
   push:
@@ -60,7 +61,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=${{ steps.src.outputs.commit }}
-            type=raw,value=canary,enable=${{ inputs.source_ref == '' }}
             type=raw,value=latest,enable=${{ inputs.source_ref == '' }}
           labels: |
             org.opencontainers.image.revision=${{ steps.src.outputs.commit }}
@@ -71,7 +71,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: src
           file: flyitalyadsb/Dockerfile
@@ -80,3 +82,12 @@ jobs:
           build-args: REVISION=${{ steps.src.outputs.commit }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      # The canary for cell B, in its own repository: with one repository for
+      # both cells argocd-image-updater v1.1.1 drops one cell's override when it
+      # writes the other's (seen with readsb on 2026-10-23).
+      - name: Publish the canary for cell B
+        if: inputs.source_ref == ''
+        run: >-
+          docker buildx imagetools create
+          --tag ghcr.io/${{ github.repository }}-canary:canary
+          ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
