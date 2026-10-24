@@ -51,7 +51,10 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}
           COMMIT_FIELD: tar1090_commit
           STARTED_FIELD: tar1090_started
-          SOAK_HOURS: "20"
+          # 2 h, not readsb's 20: tar1090 is static files, its real gate is
+          # check.py + the browser smoke test before the build. The soak only
+          # has to show cell B serves it. Owner 2026-10-24.
+          SOAK_HOURS: "2"
           MIN_RATIO: "0.85"
           CANARY_IMAGE: ghcr.io/${{ github.repository }}-canary
           BOOTSTRAP_DIGEST: ${{ inputs.bootstrap_digest }}
