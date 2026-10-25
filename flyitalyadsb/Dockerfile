@@ -8,6 +8,10 @@
 # built from d892b99 this image reproduces the files served on 2026-10-23
 # (329 html files and nginx.conf identical).
 #
+# html/ must already hold tar1090-db (flyitalyadsb/add-db.sh, run by
+# docker.yaml before the checks): that init container never installed it, so
+# until 2026-10-25 the map had no aircraft types, airlines or airport codes.
+#
 # Build context: the repository root. Build args: REVISION (the commit built).
 FROM alpine:3.21 AS build
 ARG REVISION=unknown

@@ -9,6 +9,8 @@ python3 flyitalyadsb/check.py [SOURCE_DIR]   (default: the repository root)
   page name or analytics. Keep EXPECTED in step with
   nesso-infra k8s/flyitalyadsb/base/nginx-conf/mappa.flyitalyadsb.conf.
 - Every local script and stylesheet index.html loads exists.
+- index.html's databaseFolder is a db-* folder (add-db.sh) holding the lookup
+  tables, gzipped: nginx.conf sends db-*.js with Content-Encoding gzip.
 - nginx.conf still uses the placeholders the Dockerfile rewrites.
 """
 import pathlib
@@ -22,6 +24,7 @@ EXPECTED = (
     '<script src="config.js"></script>',
     'href="images/tar1090-favicon.png"',
 )
+DB_FILES = ("icao_aircraft_types2.js", "operators.js", "ranges.js", "airport-coords.js", "regIcao.js")
 PLACEHOLDERS = ("/INSTANCE/", "SOURCE_DIR", "HTMLPATH", "/run/SERVICE/")
 
 
@@ -39,7 +42,19 @@ def check(root):
         path = ref.split("?")[0]
         if not (html / path).is_file():
             errors.append(f"index.html loads {ref}, which is not in html/")
-    conf = (root / "nginx.conf").read_text()
+    folders = re.findall(r'let databaseFolder = "([^"]*)";', index)
+    if len(folders) != 1:
+        errors.append(f"index.html has {len(folders)} databaseFolder assignments (expected 1)")
+    elif not folders[0].startswith("db-"):
+        errors.append(f'databaseFolder is "{folders[0]}", not a db-* folder: run flyitalyadsb/add-db.sh first')
+    else:
+        for name in DB_FILES:
+            p = html / folders[0] / name
+            if not p.is_file():
+                errors.append(f"{folders[0]}/{name} is missing")
+            elif p.read_bytes()[:2] != b"\x1f\x8b":
+                errors.append(f"{folders[0]}/{name} is not gzipped (nginx.conf sends it with Content-Encoding gzip)")
+    conf =(root / "nginx.conf").read_text()
     for p in PLACEHOLDERS:
         if p not in conf:
             errors.append(f"nginx.conf no longer has the placeholder {p}: the Dockerfile's rewrite is out of date")
