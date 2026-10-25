@@ -43,6 +43,8 @@ jobs:
             git worktree add -q src HEAD
           fi
           echo "commit=$(git -C src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Add tar1090-db at flyitalyadsb/tar1090-db.commit (aircraft types, airlines, military ranges, airports, registrations)
+        run: flyitalyadsb/add-db.sh src
       - name: Static checks (the mappa vhost's sub_filter strings, local scripts, nginx.conf placeholders)
         run: python3 flyitalyadsb/check.py src
       - uses: actions/setup-node@v4

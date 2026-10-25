@@ -5,7 +5,9 @@
 //
 // Serves html/ with a fake readsb (/data/receiver.json, /data/aircraft.json
 // with one aircraft), loads the page in headless Chromium and fails if the
-// page throws a JavaScript error or the aircraft never shows up in the table.
+// page throws a JavaScript error, the aircraft never shows up in the table, or
+// the lookup tables of add-db.sh don't load (db-*.js go out gzipped, as
+// nginx.conf sends them).
 // Nobody looks at cell B's map, so without this a broken UI would pass the
 // canary soak and reach the public map. Map tiles may fail to load: that's
 // the network, not tar1090.
@@ -38,7 +40,9 @@ const server = http.createServer((req, res) => {
   if (!p.startsWith(html)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');
   if (!fs.existsSync(p)) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'content-type': types[path.extname(p)] || 'application/octet-stream' });
+  const headers = { 'content-type': types[path.extname(p)] || 'application/octet-stream' };
+  if (/^\/db-.*\.js$/.test(url.pathname)) headers['content-encoding'] = 'gzip';
+  res.writeHead(200, headers);
   fs.createReadStream(p).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -48,6 +52,9 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
+page.on('response', (r) => {
+  if (/\/db-[^/]*\//.test(r.url()) && r.status() >= 400) errors.push(`${r.status()} on ${r.url()}`);
+});
 let ok = false;
 try {
   await page.goto(base, { waitUntil: 'load', timeout: 30000 });
@@ -55,6 +62,19 @@ try {
   ok = true;
 } catch (e) {
   errors.push(`aircraft SMOKE1 never appeared: ${e.message.split('\n')[0]}`);
+}
+try {
+  if (ok) {
+    await page.waitForFunction(() => g.type_cache && operatorsCache && Object.keys(operatorsCache).length, null, { timeout: 15000 });
+    const db = await page.evaluate(() => ({
+      type: g.type_cache.A320,
+      airline: lookupAirlineForCallsign('ITY123', ''),
+      milRanges: milRanges.length,
+    }));
+    if (!db.type || !db.airline || !db.milRanges) errors.push(`lookup tables incomplete: ${JSON.stringify(db)}`);
+  }
+} catch (e) {
+  errors.push(`aircraft types and airlines never loaded: ${e.message.split('\n')[0]}`);
 } finally {
   await browser.close();
   server.close();
