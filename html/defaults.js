@@ -126,6 +126,10 @@ let headingLineMinutes = 0;
 
 let altitudeChartDefaultState = true;
 
+// HSL for planes that are squawking IDENT
+let identOverrideColor = null;
+// example: identOverrideColor = { h: 0, s: 0, l: 100 }
+
 // These settings control the coloring of aircraft by altitude.
 // All color values are given as Hue (0-359) / Saturation (0-100) / Lightness (0-100)
 let ColorByAlt = {
@@ -200,9 +204,6 @@ let ColorByAlt = {
 
 	// Changes added to the color of planes that have positions from mlat
 	mlat :     { h: 0, s: 0, l: 0 },
-
-	// HSL for planes that are squawking IDENT
-	ident :    { h: 0, s: 0, l: 100 }
 };
 
 // For a monochrome display try this:

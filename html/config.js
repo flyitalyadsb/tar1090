@@ -143,6 +143,9 @@
 
 // altitudeChartDefaultState = true;
 
+// HSL for planes that are squawking IDENT
+// identOverrideColor = { h: 0, s: 0, l: 100 }
+
 // These settings control the coloring of aircraft by altitude.
 // All color values are given as Hue (0-359) / Saturation (0-100) / Lightness (0-100)
 //
@@ -186,9 +189,6 @@ ColorByAlt = {
 
 	// Changes added to the color of planes that have positions from mlat
 	mlat :     { h: 0, s: -10, l: -10 },
-
-	// HSL for planes that are squawking IDENT
-	ident :    { h: 0, s: 0, l: 100 }
 };
 
 */
