@@ -1392,12 +1392,19 @@ function earlyInitPage() {
         jQuery('#settings_infoblock').toggle();
     });
 
-    if (onMobile) {
+    // flyitalyadsb: iPhone Safari has no element fullscreen and iPad only the
+    // webkit-prefixed one; calling the missing method threw a TypeError, and a
+    // refused request left an unhandled promise rejection. Hide the button when
+    // there is no API, use the prefixed one when that is all there is.
+    const fsRoot = document.documentElement;
+    const fsRequest = fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen;
+    const fsExit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (onMobile && fsRequest) {
         jQuery('#fullscreenButton').on('click', function() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else if (document.exitFullscreen) {
-                document.exitFullscreen();
+            if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
+                Promise.resolve(fsRequest.call(fsRoot)).catch(() => {});
+            } else if (fsExit) {
+                Promise.resolve(fsExit.call(document)).catch(() => {});
             }
         });
     } else {

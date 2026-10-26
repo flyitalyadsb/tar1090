@@ -7,6 +7,9 @@ kept as it was and not used.
 
 Each build of this branch adds tar1090-db, runs `check.py` and `smoke.mjs`,
 then pushes `ghcr.io/flyitalyadsb/tar1090` tagged with the commit and `canary`:
+- `cachebust.sh` (upstream's, as install.sh runs it): renames the scripts and
+  stylesheet name_<md5>.ext and rewrites index.html. nginx.conf caches them 14
+  days, so without it browsers and Cloudflare mixed releases (2026-10-26).
 - `add-db.sh`: wiedehopf/tar1090-db at `tar1090-db.commit` into `html/db-<commit>`,
   as upstream's install.sh does: aircraft types (icon, wake category), airlines
   by callsign, military ranges, airport codes, registrations. `sync-upstream.yaml`
@@ -23,4 +26,4 @@ nesso-infra `docs/FLYITALYADSB-TWO-CELLS.md`, "Automatic release of readsb and
 tar1090".
 
 Local test, on a copy (add-db.sh changes html/index.html):
-`git worktree add /tmp/t1090 HEAD && flyitalyadsb/add-db.sh /tmp/t1090 && python3 flyitalyadsb/check.py /tmp/t1090 && (cd flyitalyadsb && npm ci && npx playwright install chromium && node smoke.mjs /tmp/t1090)`
+`git worktree add /tmp/t1090 HEAD && flyitalyadsb/add-db.sh /tmp/t1090 && (cd /tmp/t1090/html && bash ../cachebust.sh ../cachebust.list .) && python3 flyitalyadsb/check.py /tmp/t1090 && (cd flyitalyadsb && npm ci && npx playwright install chromium && node smoke.mjs /tmp/t1090)` (GNU sed and md5sum: on macOS put gsed first in PATH as sed).
