@@ -45,6 +45,15 @@ jobs:
           echo "commit=$(git -C src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Add tar1090-db at flyitalyadsb/tar1090-db.commit (aircraft types, airlines, military ranges, airports, registrations)
         run: flyitalyadsb/add-db.sh src
+      # As upstream's install.sh does: nginx.conf gives every html/*.js and
+      # style.css 14 days of cache (browsers and Cloudflare), which is only
+      # right if each release renames them. Without this, Cloudflare kept
+      # serving the 2026-06-16 planeObject.js/defaults.js/script.js for weeks
+      # after a release, mixed with new files (ReferenceError
+      # headingLineMinutes, 2026-10-26).
+      - name: Cache-bust the scripts and stylesheet (name_<md5>.ext, index.html rewritten)
+        working-directory: src/html
+        run: bash ../cachebust.sh ../cachebust.list .
       - name: Static checks (the mappa vhost's sub_filter strings, local scripts, nginx.conf placeholders)
         run: python3 flyitalyadsb/check.py src
       - uses: actions/setup-node@v4

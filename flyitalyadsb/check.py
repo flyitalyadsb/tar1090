@@ -12,6 +12,11 @@ python3 flyitalyadsb/check.py [SOURCE_DIR]   (default: the repository root)
 - index.html's databaseFolder is a db-* folder (add-db.sh) holding the lookup
   tables, gzipped: nginx.conf sends db-*.js with Content-Encoding gzip.
 - nginx.conf still uses the placeholders the Dockerfile rewrites.
+- The files in cachebust.list were renamed name_<md5>.ext and index.html loads
+  those names (docker.yaml runs cachebust.sh after add-db.sh): nginx.conf caches
+  every html/*.js for 14 days, so a fixed name mixes releases in browsers and
+  at Cloudflare (2026-10-26: the 16 June planeObject.js still served from the
+  edge with a new defaults.js, ReferenceError headingLineMinutes).
 """
 import pathlib
 import re
@@ -54,7 +59,14 @@ def check(root):
                 errors.append(f"{folders[0]}/{name} is missing")
             elif p.read_bytes()[:2] != b"\x1f\x8b":
                 errors.append(f"{folders[0]}/{name} is not gzipped (nginx.conf sends it with Content-Encoding gzip)")
-    conf =(root / "nginx.conf").read_text()
+    for line in (root / "cachebust.list").read_text().split():
+        stem, _, ext = line.rpartition(".")
+        hashed = [p for p in html.glob(f"{stem}_*.{ext}") if re.fullmatch(rf"{re.escape(pathlib.Path(stem).name)}_[0-9a-f]{{32}}\.{ext}", p.name)]
+        if (html / line).exists() or len(hashed) != 1:
+            errors.append(f"{line} is not cache-busted (expected one {stem}_<md5>.{ext}): run cachebust.sh as docker.yaml does")
+        elif hashed[0].relative_to(html).as_posix() not in index:
+            errors.append(f"index.html doesn't load {hashed[0].relative_to(html).as_posix()}")
+    conf = (root / "nginx.conf").read_text()
     for p in PLACEHOLDERS:
         if p not in conf:
             errors.append(f"nginx.conf no longer has the placeholder {p}: the Dockerfile's rewrite is out of date")
