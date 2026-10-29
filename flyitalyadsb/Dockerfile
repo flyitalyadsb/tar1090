@@ -1,5 +1,5 @@
 # flyitalyadsb: tar1090's web files as an image, for the nginx pods of
-# mappa.flyitalyadsb.com (nesso-infra k8s/flyitalyadsb/base/nginx.yaml). An init
+# map.flyitalyadsb.com (nesso-infra k8s/flyitalyadsb/base/nginx.yaml). An init
 # container copies /tar1090 into the pod at start. Until 2026-10-23 the files
 # were downloaded once from wiedehopf/tar1090 master into a shared volume and
 # never updated (the 2026-06-16 copy, upstream d892b99).

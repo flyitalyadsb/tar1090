@@ -1,7 +1,7 @@
 name: docker build
 
 # flyitalyadsb: tar1090's web files as ghcr.io/flyitalyadsb/tar1090, for the nginx
-# pods of mappa.flyitalyadsb.com (flyitalyadsb/Dockerfile). Every build of this
+# pods of map.flyitalyadsb.com (flyitalyadsb/Dockerfile). Every build of this
 # branch is a canary (ghcr.io/flyitalyadsb/tar1090-canary:canary), which
 # argocd-image-updater in nesso-infra deploys to cell B; promote.yaml moves
 # tar1090:stable (cell A) once B has held it. Design: nesso-infra
