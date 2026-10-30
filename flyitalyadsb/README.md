@@ -1,7 +1,7 @@
 # flyitalyadsb build of tar1090
 
 This branch is wiedehopf/tar1090 `master` plus this folder and `.github/`. It is
-the web UI of mappa.flyitalyadsb.com. Upstream is merged daily
+the web UI of map.flyitalyadsb.com. Upstream is merged daily
 (`sync-upstream.yaml`); the old `master` of this fork, a few 2023 experiments, is
 kept as it was and not used.
 
