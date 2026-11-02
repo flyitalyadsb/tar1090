@@ -17,6 +17,10 @@ python3 flyitalyadsb/check.py [SOURCE_DIR]   (default: the repository root)
   every html/*.js for 14 days, so a fixed name mixes releases in browsers and
   at Cloudflare (2026-10-26: the 16 June planeObject.js still served from the
   edge with a new defaults.js, ReferenceError headingLineMinutes).
+- The re-api refresh setting is still wired (2026-11-02): defaults.js declares
+  reapiRefreshBytes, refreshInt in script.js divides by it, config.js sets ours.
+  If an upstream merge rewrites refreshInt, the map would silently go back to
+  3-4.5 s refreshes over dense areas.
 """
 import pathlib
 import re
@@ -66,6 +70,17 @@ def check(root):
             errors.append(f"{line} is not cache-busted (expected one {stem}_<md5>.{ext}): run cachebust.sh as docker.yaml does")
         elif hashed[0].relative_to(html).as_posix() not in index:
             errors.append(f"index.html doesn't load {hashed[0].relative_to(html).as_posix()}")
+    def busted(stem):
+        """The text of html/<stem>.js, under its cache-busted name if it has one."""
+        found = [p for p in html.glob(f"{stem}_*.js") if re.fullmatch(rf"{stem}_[0-9a-f]{{32}}\.js", p.name)]
+        p = found[0] if len(found) == 1 else html / f"{stem}.js"
+        return p.read_text() if p.is_file() else ""
+    if not re.search(r"^let reapiRefreshBytes = \d+;", busted("defaults"), re.M):
+        errors.append("defaults.js doesn't declare reapiRefreshBytes (the re-api refresh setting, 2026-11-02)")
+    if "lastRequestSize / reapiRefreshBytes" not in busted("script"):
+        errors.append("refreshInt in script.js no longer divides by reapiRefreshBytes: an upstream change undid the 2026-11-02 one")
+    if not re.search(r"^reapiRefreshBytes = \d+;", (html / "config.js").read_text(), re.M):
+        errors.append("config.js doesn't set reapiRefreshBytes")
     conf = (root / "nginx.conf").read_text()
     for p in PLACEHOLDERS:
         if p not in conf:

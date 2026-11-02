@@ -489,6 +489,11 @@ let prefer978 = 0;
 
 let dynGlobeRate = false; // enable use of globeRates.json in index.html directory to steer client refresh rate
 
+// globe with the readsb API (re-api): a response bigger than this many bytes (as received, compressed)
+// stretches the refresh proportionally, up to 7x RefreshInterval (see refreshInt in script.js).
+// Raise it to keep dense areas at the decoder's rate (receiver.json refresh).
+let reapiRefreshBytes = 35000;
+
 let multiOutline = false;
 let inhibitIframe = false;
 

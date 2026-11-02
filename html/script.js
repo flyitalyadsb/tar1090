@@ -6729,7 +6729,7 @@ function refreshInt() {
     // handle globe case
 
     if (reApi && (binCraft || zstd)) {
-        refresh = RefreshInterval * lastRequestSize / 35000;
+        refresh = RefreshInterval * lastRequestSize / reapiRefreshBytes;
         let extent = getViewOversize(1.03);
         const latDiff = extent.maxLat - extent.minLat;
         const lonDiff = extent.maxLon - extent.minLon;

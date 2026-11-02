@@ -466,3 +466,9 @@ tableColors = {
 //
 
 // MergeNonIcao = false; // set to true to merge non icao hex with the icao hex (remove the ~)
+
+// flyitalyadsb: a city or a country refreshes at the decoder's rate (receiver.json refresh),
+// only a continent or the world slows down. At upstream's 35000, London at ~10 NM (60-80 kB per
+// re-api response) refreshed every 3-4.5 s instead of 2 (2026-11-02, a user's screen recording).
+// The re-api load is small (~10 requests/min on 2026-11-02 morning). flyitalyadsb/check.py keeps it wired.
+reapiRefreshBytes = 150000;
