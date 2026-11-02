@@ -12,6 +12,9 @@
 // recordings): hidden where the browser has no fullscreen API (iPhone Safari,
 // simulated by removing it), shown and error-free where it has one (Android),
 // hidden on desktop.
+// Then the re-api refresh (2026-11-02): with our config.js a 70 kB response
+// (London at ~10 NM) keeps the decoder's rate, a 300 kB one (a continent)
+// waits twice as long.
 // Nobody looks at cell B's map, so without this a broken UI would pass the
 // canary soak and reach the public map. Map tiles may fail to load: that's
 // the network, not tar1090.
@@ -79,6 +82,31 @@ try {
   }
 } catch (e) {
   errors.push(`aircraft types and airlines never loaded: ${e.message.split('\n')[0]}`);
+}
+try {
+  if (ok) {
+    // The fake readsb is not a globe: set the re-api globals, call refreshInt and
+    // put them back in one synchronous call, so no fetch runs in between.
+    const r = await page.evaluate(() => {
+      const view = OLMap.getView();
+      const saved = { globeIndex, reApi, binCraft, RefreshInterval, lastRequestSize, FollowSelected, lastActive, zoom: view.getZoom() };
+      const out = { setting: reapiRefreshBytes };
+      try {
+        view.setZoom(9);
+        globeIndex = 1; reApi = true; binCraft = true; RefreshInterval = 2000; FollowSelected = true; lastActive = Date.now();
+        for (const size of [70000, 300000]) { lastRequestSize = size; out[size] = Math.round(refreshInt()); }
+      } finally {
+        ({ globeIndex, reApi, binCraft, RefreshInterval, lastRequestSize, FollowSelected, lastActive } = saved);
+        view.setZoom(saved.zoom);
+      }
+      return out;
+    });
+    if (r.setting !== 150000 || r[70000] !== 2000 || r[300000] !== 4000) {
+      errors.push(`re-api refresh ${JSON.stringify(r)}: expected setting 150000, 2000 ms at 70 kB, 4000 ms at 300 kB`);
+    }
+  }
+} catch (e) {
+  errors.push(`re-api refresh check: ${e.message.split('\n')[0]}`);
 }
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
